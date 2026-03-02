@@ -28,10 +28,16 @@ final class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            'firstname' => fake()->firstName(),
+            'lastname' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => self::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'gender' => fake()->randomElement(['male', 'female', 'non_binary', 'not_specified']),
+            'status' => null,
+            'phone' => fake()->phoneNumber(),
+            'phone_indication' => fake()->countryCode(),
         ];
     }
 

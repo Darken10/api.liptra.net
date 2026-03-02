@@ -4,20 +4,29 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Gender;
+use App\Enums\Status;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
+ * @property string|null $firstname
+ * @property string|null $lastname
+ * @property Gender|null $gender
+ * @property string|null $phone
+ * @property string|null $phone_indication
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -28,6 +37,8 @@ final class User extends Authenticatable implements MustVerifyEmail
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
+    use HasRoles;
+    use HasUuids;
     use Notifiable;
 
     /**
@@ -39,6 +50,12 @@ final class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'firstname',
+        'lastname',
+        'gender',
+        'status',
+        'phone',
+        'phone_indication',
     ];
 
     /**
@@ -59,8 +76,11 @@ final class User extends Authenticatable implements MustVerifyEmail
     protected function casts(): array
     {
         return [
+            'id' => 'string',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'gender' => Gender::class,
+            'status' => Status::class,
         ];
     }
 }
