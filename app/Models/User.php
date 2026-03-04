@@ -10,6 +10,8 @@ use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -82,5 +84,39 @@ final class User extends Authenticatable implements MustVerifyEmail
             'gender' => Gender::class,
             'status' => Status::class,
         ];
+    }
+
+    /**
+     * @return BelongsToMany<Company, $this>
+     */
+    public function companies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class, 'company_user')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<Booking, $this>
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * @return HasMany<Comment, $this>
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * @return HasMany<Reaction, $this>
+     */
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(Reaction::class);
     }
 }
