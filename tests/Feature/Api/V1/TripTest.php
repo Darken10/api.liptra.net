@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\ComfortType;
 use App\Enums\TripStatus;
 use App\Models\Bus;
 use App\Models\City;
@@ -80,7 +79,7 @@ describe('Trip Search', function (): void {
             'is_active' => true,
         ]);
 
-        $response = $this->getJson('/api/v1/trips?' . http_build_query([
+        $response = $this->getJson('/api/v1/trips?'.http_build_query([
             'departure_city_id' => $setup['departure']->id,
             'arrival_city_id' => $setup['arrival']->id,
         ]));
@@ -122,9 +121,12 @@ describe('Trip Search', function (): void {
 describe('Trip Management', function (): void {
     it('allows admin to create trip', function (): void {
         $setup = createTripSetup();
+        $this->seed(Database\Seeders\RolePermissionSeeder::class);
+        app()[Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         $user = User::factory()->create();
-        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
         $user->assignRole('admin');
+        $setup['company']->users()->attach($user->id, ['role' => 'admin']);
 
         $response = $this->actingAs($user)->postJson('/api/v1/trips', [
             'route_id' => $setup['route']->id,
@@ -143,7 +145,8 @@ describe('Trip Management', function (): void {
     it('forbids regular user from creating trip', function (): void {
         $setup = createTripSetup();
         $user = User::factory()->create();
-        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->seed(Database\Seeders\RolePermissionSeeder::class);
+        app()[Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
         $user->assignRole('user');
 
         $response = $this->actingAs($user)->postJson('/api/v1/trips', [

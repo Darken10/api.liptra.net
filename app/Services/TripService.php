@@ -59,6 +59,9 @@ final class TripService
      */
     public function createTrip(array $data): Trip
     {
+        $data['status'] = $data['status'] ?? TripStatus::Scheduled;
+        $data['is_active'] = $data['is_active'] ?? true;
+
         return Trip::query()->create($data);
     }
 
