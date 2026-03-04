@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Resources\TripResource;
+use App\Models\Bus;
 use App\Models\Trip;
 use App\Services\TripService;
 use Illuminate\Http\JsonResponse;

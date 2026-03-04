@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Admin\AnnouncementController as AdminAnnouncemen
 use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\V1\Admin\BusController as AdminBusController;
 use App\Http\Controllers\Api\V1\Admin\CityController as AdminCityController;
+use App\Http\Controllers\Api\V1\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\DriverController as AdminDriverController;
 use App\Http\Controllers\Api\V1\Admin\RouteController as AdminRouteController;
@@ -123,6 +124,18 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
 
         // ── Dashboard ────────────────────────────────────────────────
         Route::get('dashboard', AdminDashboardController::class)->name('api.v1.admin.dashboard');
+
+        // ── Companies management ─────────────────────────────────────
+        Route::middleware('permission:manage-companies|view-companies')->group(function (): void {
+            Route::get('companies', [AdminCompanyController::class, 'index'])->name('api.v1.admin.companies.index');
+            Route::get('companies/{company}', [AdminCompanyController::class, 'show'])->name('api.v1.admin.companies.show');
+        });
+
+        Route::middleware('permission:manage-companies')->group(function (): void {
+            Route::post('companies', [AdminCompanyController::class, 'store'])->name('api.v1.admin.companies.store');
+            Route::put('companies/{company}', [AdminCompanyController::class, 'update'])->name('api.v1.admin.companies.update');
+            Route::delete('companies/{company}', [AdminCompanyController::class, 'destroy'])->name('api.v1.admin.companies.destroy');
+        });
 
         // ── Users management ─────────────────────────────────────────
         Route::middleware('permission:manage-users|view-users')->group(function (): void {
