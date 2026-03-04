@@ -64,12 +64,17 @@ final class TripController extends ApiController
             'departure_at' => ['required', 'date', 'after:now'],
             'estimated_arrival_at' => ['nullable', 'date', 'after:departure_at'],
             'price' => ['required', 'integer', 'min:0'],
-            'available_seats' => ['required', 'integer', 'min:0'],
+            'available_seats' => ['sometimes', 'integer', 'min:0'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['boolean'],
         ]);
 
         $validated['status'] = 'scheduled';
+
+        if (! isset($validated['available_seats'])) {
+            $bus = Bus::query()->find($validated['bus_id']);
+            $validated['available_seats'] = $bus?->total_seats ?? 0;
+        }
 
         $trip = Trip::query()->create($validated);
         $trip->load(['company', 'route.departureCity', 'route.arrivalCity', 'bus', 'driver', 'departureStation.city', 'arrivalStation.city']);
