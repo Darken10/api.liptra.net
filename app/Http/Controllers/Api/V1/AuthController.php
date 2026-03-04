@@ -31,6 +31,7 @@ final class AuthController extends ApiController
         ]);
 
         $user->sendEmailVerificationNotification();
+        $user->load('roles', 'permissions');
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -48,6 +49,7 @@ final class AuthController extends ApiController
             return $this->unauthorized('Invalid credentials');
         }
 
+        $user->load('roles', 'permissions');
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return $this->success([
@@ -67,6 +69,8 @@ final class AuthController extends ApiController
 
     public function me(Request $request): JsonResponse
     {
+        $request->user()->load('roles', 'permissions');
+
         return $this->success(new UserResource($request->user()));
     }
 
