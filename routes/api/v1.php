@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardContr
 use App\Http\Controllers\Api\V1\Admin\DriverController as AdminDriverController;
 use App\Http\Controllers\Api\V1\Admin\RouteController as AdminRouteController;
 use App\Http\Controllers\Api\V1\Admin\StationController as AdminStationController;
+use App\Http\Controllers\Api\V1\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Api\V1\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Api\V1\Admin\TripController as AdminTripController;
 use App\Http\Controllers\Api\V1\Admin\UserController as AdminUserController;
@@ -242,12 +243,15 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
         Route::middleware('permission:manage-announcements|view-announcements')->group(function (): void {
             Route::get('announcements', [AdminAnnouncementController::class, 'index'])->name('api.v1.admin.announcements.index');
             Route::get('announcements/{announcement}', [AdminAnnouncementController::class, 'show'])->name('api.v1.admin.announcements.show');
+            Route::get('tags', [AdminTagController::class, 'index'])->name('api.v1.admin.tags.index');
         });
 
         Route::middleware('permission:manage-announcements')->group(function (): void {
             Route::post('announcements', [AdminAnnouncementController::class, 'store'])->name('api.v1.admin.announcements.store');
             Route::put('announcements/{announcement}', [AdminAnnouncementController::class, 'update'])->name('api.v1.admin.announcements.update');
             Route::delete('announcements/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('api.v1.admin.announcements.destroy');
+            Route::post('tags', [AdminTagController::class, 'store'])->name('api.v1.admin.tags.store');
+            Route::delete('tags/{tag}', [AdminTagController::class, 'destroy'])->name('api.v1.admin.tags.destroy');
         });
     });
 });

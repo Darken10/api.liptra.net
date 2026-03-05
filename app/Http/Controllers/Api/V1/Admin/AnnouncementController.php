@@ -97,7 +97,14 @@ final class AnnouncementController extends ApiController
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
             'content' => ['sometimes', 'string'],
-            'image' => ['nullable', 'string'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'image' => ['nullable', 'image', 'max:2048'],
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*' => ['image', 'max:5120'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['uuid', 'exists:tags,id'],
+            'remove_image_ids' => ['nullable', 'array'],
+            'remove_image_ids.*' => ['uuid'],
             'is_published' => ['boolean'],
         ]);
 
@@ -105,12 +112,37 @@ final class AnnouncementController extends ApiController
             $validated['slug'] = Str::slug($validated['title']).'-'.Str::random(6);
         }
 
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('announcements', 'public');
+        }
+
         if ($request->boolean('is_published') && ! $announcement->is_published) {
             $validated['published_at'] = now();
         }
 
+        unset($validated['images'], $validated['tag_ids'], $validated['remove_image_ids']);
+
         $announcement->update($validated);
-        $announcement->load('company', 'author');
+
+        if ($request->has('remove_image_ids')) {
+            $announcement->images()->whereIn('id', $request->input('remove_image_ids'))->delete();
+        }
+
+        if ($request->hasFile('images')) {
+            $maxOrder = $announcement->images()->max('order') ?? -1;
+            foreach ($request->file('images') as $index => $file) {
+                $announcement->images()->create([
+                    'path' => $file->store('announcements', 'public'),
+                    'order' => $maxOrder + $index + 1,
+                ]);
+            }
+        }
+
+        if ($request->has('tag_ids')) {
+            $announcement->tags()->sync($request->input('tag_ids', []));
+        }
+
+        $announcement->load('company', 'author', 'tags', 'images');
 
         return $this->success(new AnnouncementResource($announcement));
     }
