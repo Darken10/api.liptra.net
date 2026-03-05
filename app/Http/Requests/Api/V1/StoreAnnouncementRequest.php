@@ -26,7 +26,12 @@ final class StoreAnnouncementRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
+            'category' => ['nullable', 'string', 'max:100'],
             'image' => ['nullable', 'image', 'max:2048'],
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*' => ['image', 'max:5120'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['uuid', 'exists:tags,id'],
             'is_published' => ['sometimes', 'boolean'],
         ];
     }

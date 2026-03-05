@@ -15,7 +15,7 @@ final class AnnouncementController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Announcement::query()->with('company', 'author')->withCount('comments', 'reactions');
+        $query = Announcement::query()->with('company', 'author', 'tags', 'images')->withCount('comments', 'reactions');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search): void {
@@ -39,7 +39,7 @@ final class AnnouncementController extends ApiController
 
     public function show(Announcement $announcement): JsonResponse
     {
-        $announcement->load('company', 'author', 'comments.user', 'reactions');
+        $announcement->load('company', 'author', 'comments.user', 'reactions', 'tags', 'images');
 
         return $this->success(new AnnouncementResource($announcement));
     }
@@ -50,19 +50,44 @@ final class AnnouncementController extends ApiController
             'company_id' => ['required', 'uuid', 'exists:companies,id'],
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
-            'image' => ['nullable', 'string'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'image' => ['nullable', 'image', 'max:2048'],
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*' => ['image', 'max:5120'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['uuid', 'exists:tags,id'],
             'is_published' => ['boolean'],
         ]);
 
         $validated['author_id'] = $request->user()->id;
         $validated['slug'] = Str::slug($validated['title']).'-'.Str::random(6);
 
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('announcements', 'public');
+        }
+
         if ($request->boolean('is_published') && ! isset($validated['published_at'])) {
             $validated['published_at'] = now();
         }
 
+        unset($validated['images'], $validated['tag_ids']);
+
         $announcement = Announcement::query()->create($validated);
-        $announcement->load('company', 'author');
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $file) {
+                $announcement->images()->create([
+                    'path' => $file->store('announcements', 'public'),
+                    'order' => $index,
+                ]);
+            }
+        }
+
+        if ($request->has('tag_ids')) {
+            $announcement->tags()->sync($request->input('tag_ids', []));
+        }
+
+        $announcement->load('company', 'author', 'tags', 'images');
 
         return $this->created(new AnnouncementResource($announcement));
     }

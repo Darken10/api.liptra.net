@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -20,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string $title
  * @property string $slug
  * @property string $content
+ * @property string|null $category
  * @property string|null $image
  * @property bool $is_published
  * @property Carbon|null $published_at
@@ -38,6 +40,7 @@ final class Announcement extends Model
         'title',
         'slug',
         'content',
+        'category',
         'image',
         'is_published',
         'published_at',
@@ -82,6 +85,22 @@ final class Announcement extends Model
     public function reactions(): HasMany
     {
         return $this->hasMany(Reaction::class);
+    }
+
+    /**
+     * @return HasMany<AnnouncementImage, $this>
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(AnnouncementImage::class)->orderBy('order');
+    }
+
+    /**
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'announcement_tag');
     }
 
     /**

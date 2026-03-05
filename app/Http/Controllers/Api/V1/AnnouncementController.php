@@ -25,7 +25,7 @@ final class AnnouncementController extends ApiController
     {
         $announcements = Announcement::query()
             ->published()
-            ->with(['company', 'author'])
+            ->with(['company', 'author', 'tags', 'images'])
             ->withCount(['comments', 'reactions'])
             ->paginate(15);
 
@@ -38,6 +38,8 @@ final class AnnouncementController extends ApiController
             ->with([
                 'company',
                 'author',
+                'tags',
+                'images',
                 'comments' => fn ($q) => $q->whereNull('parent_id')->with(['user', 'replies.user'])->latest(),
                 'reactions.user',
             ])
@@ -76,8 +78,21 @@ final class AnnouncementController extends ApiController
 
         $announcement = Announcement::query()->create($data);
 
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $file) {
+                $announcement->images()->create([
+                    'path' => $file->store('announcements', 'public'),
+                    'order' => $index,
+                ]);
+            }
+        }
+
+        if ($request->has('tag_ids')) {
+            $announcement->tags()->sync($request->input('tag_ids', []));
+        }
+
         return $this->created(
-            new AnnouncementResource($announcement->load(['company', 'author'])),
+            new AnnouncementResource($announcement->load(['company', 'author', 'tags', 'images'])),
             'Annonce créée avec succès',
         );
     }
@@ -102,8 +117,22 @@ final class AnnouncementController extends ApiController
 
         $announcement->update($data);
 
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $file) {
+                $maxOrder = $announcement->images()->max('order') ?? -1;
+                $announcement->images()->create([
+                    'path' => $file->store('announcements', 'public'),
+                    'order' => $maxOrder + $index + 1,
+                ]);
+            }
+        }
+
+        if ($request->has('tag_ids')) {
+            $announcement->tags()->sync($request->input('tag_ids', []));
+        }
+
         return $this->success(
-            new AnnouncementResource($announcement->fresh(['company', 'author'])),
+            new AnnouncementResource($announcement->fresh(['company', 'author', 'tags', 'images'])),
             'Annonce mise à jour',
         );
     }
