@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Admin\BusController as AdminBusController;
 use App\Http\Controllers\Api\V1\Admin\CityController as AdminCityController;
 use App\Http\Controllers\Api\V1\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Api\V1\Admin\TripScheduleController as AdminTripScheduleController;
 use App\Http\Controllers\Api\V1\Admin\DriverController as AdminDriverController;
 use App\Http\Controllers\Api\V1\Admin\RouteController as AdminRouteController;
 use App\Http\Controllers\Api\V1\Admin\StationController as AdminStationController;
@@ -215,6 +216,19 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
             Route::post('trips', [AdminTripController::class, 'store'])->name('api.v1.admin.trips.store');
             Route::put('trips/{trip}', [AdminTripController::class, 'update'])->name('api.v1.admin.trips.update');
             Route::post('trips/{trip}/cancel', [AdminTripController::class, 'cancel'])->name('api.v1.admin.trips.cancel');
+        });
+
+        // ── Trip Schedules management ─────────────────────────────────
+        Route::middleware('permission:manage-trips|view-trips')->group(function (): void {
+            Route::get('trip-schedules', [AdminTripScheduleController::class, 'index'])->name('api.v1.admin.trip-schedules.index');
+            Route::get('trip-schedules/{tripSchedule}', [AdminTripScheduleController::class, 'show'])->name('api.v1.admin.trip-schedules.show');
+        });
+
+        Route::middleware('permission:manage-trips')->group(function (): void {
+            Route::post('trip-schedules', [AdminTripScheduleController::class, 'store'])->name('api.v1.admin.trip-schedules.store');
+            Route::put('trip-schedules/{tripSchedule}', [AdminTripScheduleController::class, 'update'])->name('api.v1.admin.trip-schedules.update');
+            Route::delete('trip-schedules/{tripSchedule}', [AdminTripScheduleController::class, 'destroy'])->name('api.v1.admin.trip-schedules.destroy');
+            Route::post('trip-schedules/{tripSchedule}/generate', [AdminTripScheduleController::class, 'generateTrips'])->name('api.v1.admin.trip-schedules.generate');
         });
 
         // ── Bookings management ──────────────────────────────────────
