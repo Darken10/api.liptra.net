@@ -7,9 +7,12 @@ use App\Models\Announcement;
 use App\Models\Comment;
 use App\Models\Company;
 use App\Models\Reaction;
+use App\Models\Tag;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -52,6 +55,46 @@ describe('Announcement Listing', function (): void {
                 'data' => ['id', 'title', 'content', 'comments', 'reactions'],
             ]);
     });
+
+    it('includes tags and images in listing', function (): void {
+        $company = Company::factory()->create();
+        $tag = Tag::query()->create(['name' => 'Transport', 'slug' => 'transport', 'color' => '#6366f1']);
+        $announcement = Announcement::factory()->create([
+            'company_id' => $company->id,
+            'is_published' => true,
+            'published_at' => now(),
+        ]);
+        $announcement->tags()->attach($tag->id);
+        $announcement->images()->create(['path' => 'announcements/test.jpg', 'order' => 0]);
+
+        $response = $this->getJson('/api/v1/announcements');
+
+        $response->assertSuccessful();
+        $data = $response->json('data.data.0');
+        expect($data['tags'])->toHaveCount(1);
+        expect($data['tags'][0]['name'])->toBe('Transport');
+        expect($data['images'])->toHaveCount(1);
+    });
+
+    it('includes tags and images in show', function (): void {
+        $company = Company::factory()->create();
+        $tag = Tag::query()->create(['name' => 'Sécurité', 'slug' => 'securite', 'color' => '#ef4444']);
+        $announcement = Announcement::factory()->create([
+            'company_id' => $company->id,
+            'is_published' => true,
+            'published_at' => now(),
+        ]);
+        $announcement->tags()->sync([$tag->id]);
+        $announcement->images()->create(['path' => 'announcements/img1.jpg', 'order' => 0]);
+        $announcement->images()->create(['path' => 'announcements/img2.jpg', 'order' => 1]);
+
+        $response = $this->getJson("/api/v1/announcements/{$announcement->id}");
+
+        $response->assertSuccessful()
+            ->assertJsonCount(1, 'data.tags')
+            ->assertJsonCount(2, 'data.images')
+            ->assertJsonPath('data.tags.0.name', 'Sécurité');
+    });
 });
 
 describe('Announcement Management', function (): void {
@@ -71,6 +114,37 @@ describe('Announcement Management', function (): void {
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('announcements', ['title' => 'Nouvelle ligne Ouaga-Bobo']);
+    });
+
+    it('allows admin to create announcement with tags and images', function (): void {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $company = Company::factory()->create();
+        $company->users()->attach($user->id, ['role' => 'admin']);
+
+        test()->seed(RolePermissionSeeder::class);
+        $user->assignRole('admin');
+
+        $tag = Tag::query()->create(['name' => 'Promo', 'slug' => 'promo', 'color' => '#22c55e']);
+
+        $response = $this->actingAs($user)->postJson('/api/v1/announcements', [
+            'title' => 'Promo été',
+            'content' => 'Profitez de nos offres spéciales.',
+            'category' => 'Promotion',
+            'tag_ids' => [$tag->id],
+            'images' => [
+                UploadedFile::fake()->image('photo1.jpg'),
+                UploadedFile::fake()->image('photo2.jpg'),
+            ],
+            'is_published' => true,
+        ]);
+
+        $response->assertStatus(201);
+        $announcement = Announcement::query()->where('title', 'Promo été')->first();
+        expect($announcement->category)->toBe('Promotion');
+        expect($announcement->tags)->toHaveCount(1);
+        expect($announcement->images)->toHaveCount(2);
     });
 
     it('forbids regular user from creating announcement', function (): void {
